@@ -2,10 +2,6 @@ name: Gerar APK Android
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'PescaMapaBrasil_Android_v1_0_1_Correcao_Mapa.zip'
-      - '.github/workflows/android.yml'
 
 jobs:
   build:
@@ -24,17 +20,34 @@ jobs:
       - name: Instalar Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Investigar arquivo ZIP
+        run: |
+          echo "Arquivos no repositorio:"
+          ls -lah
+          echo "Conteudo do ZIP:"
+          unzip -l PescaMapaBrasil_Android_v1_0_1_Correcao_Mapa.zip | head -60
+
       - name: Extrair projeto
         run: |
+          mkdir projeto
           unzip PescaMapaBrasil_Android_v1_0_1_Correcao_Mapa.zip -d projeto
-          find projeto -name settings.gradle.kts
+          echo "Procurando arquivos Gradle:"
+          find projeto -type f \( -name settings.gradle.kts -o -name settings.gradle \)
 
       - name: Compilar aplicativo
         run: |
-          cd projeto
+          GRADLE_FILE=$(find projeto -type f \( -name settings.gradle.kts -o -name settings.gradle \) | head -1)
+          if [ -z "$GRADLE_FILE" ]; then
+            echo "ERRO: arquivo settings.gradle nao encontrado"
+            find projeto -maxdepth 4 -type f | head -100
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$GRADLE_FILE")
+          cd "$PROJECT_DIR"
           gradle assembleDebug
 
       - name: Disponibilizar APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: PescaMapaBrasil-APK
