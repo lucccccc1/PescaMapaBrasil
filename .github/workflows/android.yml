@@ -1,3 +1,4 @@
+
 name: Gerar APK Android
 
 on:
@@ -24,14 +25,24 @@ jobs:
         run: |
           echo "Arquivos no repositorio:"
           ls -lah
-          echo "Conteudo do ZIP:"
-          unzip -l PescaMapaBrasil_Android_v1_0_1_Correçao_Mapa.zip | head -60
+          echo "Procurando ZIP:"
+          ZIP_FILE=$(find . -maxdepth 1 -type f -name 'PescaMapaBrasil_Android_v1_0_1_*_Mapa.zip' | head -1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERRO: ZIP nao encontrado"
+            exit 1
+          fi
+          echo "ZIP encontrado: $ZIP_FILE"
+          unzip -l "$ZIP_FILE" | head -60
 
       - name: Extrair projeto
         run: |
+          ZIP_FILE=$(find . -maxdepth 1 -type f -name 'PescaMapaBrasil_Android_v1_0_1_*_Mapa.zip' | head -1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERRO: ZIP nao encontrado"
+            exit 1
+          fi
           mkdir projeto
-          unzip PescaMapaBrasil_Android_v1_0_1_Correçao_Mapa.zip -d projeto
-          echo "Procurando arquivos Gradle:"
+          unzip "$ZIP_FILE" -d projeto
           find projeto -type f \( -name settings.gradle.kts -o -name settings.gradle \)
 
       - name: Compilar aplicativo
@@ -40,24 +51,21 @@ jobs:
           find projeto -name build.gradle.kts -exec sed -i -e 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' -e 's/JVM_1_8/JVM_17/g' -e 's/jvmTarget = "1.8"/jvmTarget = "17"/g' {} +
           GRADLE_FILE=$(find projeto -type f \( -name settings.gradle.kts -o -name settings.gradle \) | head -1)
           if [ -z "$GRADLE_FILE" ]; then
-            echo "ERRO: arquivo settings.gradle nao encontrado"
-            find projeto -maxdepth 4 -type f | head -100
+            echo "ERRO: settings.gradle nao encontrado"
             exit 1
           fi
           PROJECT_DIR=$(dirname "$GRADLE_FILE")
           cd "$PROJECT_DIR"
-cat > "$GITHUB_WORKSPACE/force-java17.gradle" <<'EOF'
-gradle.projectsEvaluated {
-    gradle.rootProject.allprojects.each { project ->
-        project.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
-            sourceCompatibility = '17'
-            targetCompatibility = '17'
-        }
-    }
-}
-EOF
-
-gradle -I "$GITHUB_WORKSPACE/force-java17.gradle" assembleDebug
+          printf '%s\n' \
+            'gradle.projectsEvaluated {' \
+            '    gradle.rootProject.allprojects.each { project ->' \
+            '        project.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {' \
+            '            sourceCompatibility = "17"' \
+            '            targetCompatibility = "17"' \
+            '        }' \
+            '    }' \
+            '}' > "$GITHUB_WORKSPACE/force-java17.gradle"
+          gradle -I "$GITHUB_WORKSPACE/force-java17.gradle" assembleDebug
 
       - name: Disponibilizar APK
         if: success()
