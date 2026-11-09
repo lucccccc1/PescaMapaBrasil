@@ -46,7 +46,18 @@ jobs:
           fi
           PROJECT_DIR=$(dirname "$GRADLE_FILE")
           cd "$PROJECT_DIR"
-          gradle assembleDebug
+cat > "$GITHUB_WORKSPACE/force-java17.gradle" <<'EOF'
+gradle.projectsEvaluated {
+    gradle.rootProject.allprojects.each { project ->
+        project.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
+            sourceCompatibility = '17'
+            targetCompatibility = '17'
+        }
+    }
+}
+EOF
+
+gradle -I "$GITHUB_WORKSPACE/force-java17.gradle" assembleDebug
 
       - name: Disponibilizar APK
         if: success()
