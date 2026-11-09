@@ -25,12 +25,12 @@ jobs:
           echo "Arquivos no repositorio:"
           ls -lah
           echo "Conteudo do ZIP:"
-          unzip -l PescaMapaBrasil_Android_v1_0_1_Correcao_Mapa.zip | head -60
+          unzip -l PescaMapaBrasil_Android_v1_0_1_Correçao_Mapa.zip | head -60
 
       - name: Extrair projeto
         run: |
           mkdir projeto
-          unzip PescaMapaBrasil_Android_v1_0_1_Correcao_Mapa.zip -d projeto
+          unzip PescaMapaBrasil_Android_v1_0_1_Correçao_Mapa.zip -d projeto
           echo "Procurando arquivos Gradle:"
           find projeto -type f \( -name settings.gradle.kts -o -name settings.gradle \)
 
