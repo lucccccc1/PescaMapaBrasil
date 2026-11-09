@@ -36,6 +36,8 @@ jobs:
 
       - name: Compilar aplicativo
         run: |
+          find projeto -name build.gradle.kts -exec sed -i 's/JvmTarget.JVM_1_8/JvmTarget.JVM_17/g' {} +
+          find projeto -name build.gradle.kts -exec sed -i -e 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' -e 's/JVM_1_8/JVM_17/g' -e 's/jvmTarget = "1.8"/jvmTarget = "17"/g' {} +
           GRADLE_FILE=$(find projeto -type f \( -name settings.gradle.kts -o -name settings.gradle \) | head -1)
           if [ -z "$GRADLE_FILE" ]; then
             echo "ERRO: arquivo settings.gradle nao encontrado"
